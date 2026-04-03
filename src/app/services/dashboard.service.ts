@@ -1,6 +1,6 @@
 import { prisma } from "../config/prisma";
 import { Role } from "@prisma/client";
-import { IUser } from "../interfaces/user.inteface";
+import { IUser } from "../interfaces/user.interface";
 
 /**
  * Service to aggregate analytical insights and statistics 

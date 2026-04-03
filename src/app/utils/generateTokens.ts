@@ -1,6 +1,7 @@
-import { IUser } from "../interfaces/user.inteface";
+
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { IUser } from "../interfaces/user.interface";
 dotenv.config()
 // Token generation helper for authentication
 export const generateTokens = (user: IUser) => {
