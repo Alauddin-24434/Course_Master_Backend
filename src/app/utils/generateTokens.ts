@@ -15,7 +15,7 @@ export const generateTokens = (user: IUser) => {
   // Refresh Token: Longer-lived token to regenerate access tokens
   const refreshToken = jwt.sign(
     { id: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET!,
+    process.env.JWT_REFRESH_SECRET!,
     { expiresIn: "7d" }
   );
 

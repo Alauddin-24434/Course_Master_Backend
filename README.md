@@ -64,11 +64,17 @@ src/
 3. **Environment Setup**:
    Create a `.env` file in the root directory and add the following variables:
    ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/coursemaster"
+   DATABASE_URL="postgresql://coursemaster_user:coursemaster_pass@localhost:5432/coursemaster_db?schema=public"
+
+   # Auth Config
+   JWT_SECRET="your_jwt_access_secret"
+   JWT_REFRESH_SECRET="your_jwt_refresh_secret"
+   JWT_EXPIRES_IN="1d"
+   REFRESH_TOKEN_EXPIRES_IN="7d"
+
+   # Server Config
    PORT=5000
    NODE_ENV="development"
-   JWT_SECRET="your_jwt_secret"
-   JWT_EXPIRES_IN="1d"
    ```
 
 4. **Prisma Setup**:
@@ -85,6 +91,25 @@ src/
    # Production build
    npm run build
    npm start
+   ```
+
+### 🐳 Run with Docker
+
+This application is containerized for easy deployment. Ensure you have Docker and Docker Compose installed.
+
+1. **Build and run the containers**:
+   ```bash
+   docker compose up -d --build
+   ```
+
+2. **Verify the services**:
+   ```bash
+   docker compose ps
+   ```
+
+3. **Check logs**:
+   ```bash
+   docker compose logs -f app
    ```
 
 ## 📡 API Endpoints

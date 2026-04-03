@@ -83,11 +83,13 @@ const refreshToken = async (token: string) => {
     // Verify the provided refresh token
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as {
       id: string;
+      email: string;
+      role: Role;
     };
 
     // Generate a new access token with 1 hour expiration
     const newAccessToken = jwt.sign(
-      { id: decoded.id },
+      { id: decoded.id, email: decoded.email, role: decoded.role },
       process.env.JWT_SECRET!,
       { expiresIn: "1h" }
     );
