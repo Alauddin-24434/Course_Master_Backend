@@ -1,0 +1,170 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// User role enum
+enum Role {
+  student
+  admin
+}
+
+// User model for identification and authentication
+model User {
+  id               String            @id @default(uuid())
+  name             String
+  email            String            @unique
+  bio              String?
+  password         String
+  role             Role              @default(student)
+  avatar           String?
+  enrolledCourses  Enrollment[]      // Relation to courses enrolled via join table
+  completedLessons CompletedLesson[] // Relation to track lesson progress
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@map("users")
+}
+
+// Category model for course classification
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  courses   Course[] // One-to-many relationship with courses
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("categories")
+}
+
+// Course model: core entity for learning content
+model Course {
+  id           String       @id @default(uuid())
+  title        String
+  description  String?
+  thumbnail    String
+  previewVideo String
+  price        Float        @default(0)
+  instructor   String?
+  isPublished  Boolean      @default(false)
+  category     Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId   String
+  batch        Batch?       // One-to-one relationship with batch details
+  modules      Module[]     // One-to-many (hierarchical: Course -> Modules -> Lessons)
+  enrolledUsers Enrollment[] // Relation through Enrollment join table
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("courses")
+}
+
+// Batch model for course scheduling
+model Batch {
+  id        String    @id @default(uuid())
+  title     String
+  startDate DateTime
+  endDate   DateTime?
+  course    Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String    @unique
+
+  @@map("batches")
+}
+
+// Module model: grouping lessons within a course
+model Module {
+  id        String   @id @default(uuid())
+  title     String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId  String
+  lessons   Lesson[] // One-to-many relationship with lessons
+  order     Int      @default(0) // For sequencing modules
+
+  @@map("modules")
+}
+
+// Lesson model: individual instructional content
+model Lesson {
+  id               String            @id @default(uuid())
+  title            String
+  videoUrl         String
+  duration         Float             @default(0) // Duration in minutes
+  module           Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId         String
+  assignment       Assignment?       // One-to-one relationship with an optional assignment
+  quiz             Quiz?             // One-to-one relationship with an optional quiz
+  order            Int               @default(0) // For sequencing lessons
+  completedByUsers CompletedLesson[] // Relation to track completion by users
+
+  @@map("lessons")
+}
+
+// Assignment model: optional task linked to a lesson
+model Assignment {
+  id             String         @id @default(uuid())
+  description    String
+  submissionType SubmissionType @default(text)
+  lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId       String         @unique
+
+  @@map("assignments")
+}
+
+enum SubmissionType {
+  text
+  link
+}
+
+// Quiz model: optional set of questions linked to a lesson
+model Quiz {
+  id        String         @id @default(uuid())
+  lesson    Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId  String         @unique
+  questions QuizQuestion[] // One-to-many relationship with quiz questions
+
+  @@map("quizzes")
+}
+
+// QuizQuestion model: individual question within a quiz
+model QuizQuestion {
+  id            String   @id @default(uuid())
+  question      String
+  options       String[] // Array of strings (supported in PostgreSQL)
+  correctAnswer Int      @default(0) // Index of correct option
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId        String
+
+  @@map("quiz_questions")
+}
+
+// Enrollment model: join table linking Users and Courses with metadata
+model Enrollment {
+  id           String   @id @default(uuid())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  courseId     String
+  enrolledAt   DateTime @default(now())
+  lastActivity DateTime @default(now()) @updatedAt
+
+  @@unique([userId, courseId]) // A student can only enroll in a course once
+  @@map("enrollments")
+}
+
+// CompletedLesson model: tracks which user has finished which lesson
+model CompletedLesson {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lessonId    String
+  completedAt DateTime @default(now())
+
+  @@unique([userId, lessonId])
+  @@map("completed_lessons")
+}

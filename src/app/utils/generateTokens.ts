@@ -1,0 +1,22 @@
+import { IUser } from "../interfaces/user.inteface";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config()
+// Token generation helper for authentication
+export const generateTokens = (user: IUser) => {
+  // Access Token: Short-lived token for session authentication
+  const accessToken = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    process.env.JWT_SECRET!,
+    { expiresIn: "1d" }
+  );
+
+  // Refresh Token: Longer-lived token to regenerate access tokens
+  const refreshToken = jwt.sign(
+    { id: user.id, email: user.email, role: user.role },
+    process.env.JWT_SECRET!,
+    { expiresIn: "7d" }
+  );
+
+  return { accessToken, refreshToken };
+};
