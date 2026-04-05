@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser"; // <-- ADD THIS
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
 import { baseRouter } from "./app/routes/baseRouter";
+import { webhookRouter } from "./app/routes/webhook.route";
 import rateLimit from "express-rate-limit";
 
 // ==============================
@@ -14,6 +15,8 @@ const app = express();
 // MIDDLEWARES
 // ==============================
 
+// Webhooks (must be before express.json)
+app.use("/api/webhook", webhookRouter);
 
 // Parse JSON bodies
 app.use(express.json());

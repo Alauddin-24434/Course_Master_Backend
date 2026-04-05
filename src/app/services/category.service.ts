@@ -1,6 +1,7 @@
+import { prisma } from "../../lib/prisma";
 import { CustomAppError } from "../errors/customError";
-import { prisma } from "../config/prisma";
-import { ICategory } from "../interfaces/course.interface";
+import { ICategory } from "../interfaces/category.interface";
+
 
 /**
  * Fetch all available course categories from PostgreSQL

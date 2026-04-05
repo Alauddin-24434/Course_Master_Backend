@@ -1,8 +1,35 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { prisma } from "../config/prisma";
+import { prisma } from "../../lib/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secretkey";
+
+/**
+ * Optional authentication middleware: 
+ * If a token is provided and valid, it populates req.user.
+ * If no token or invalid, it continues without populating req.user.
+ */
+export const optionalProtect = async (req: Request, res: Response, next: NextFunction) => {
+  let token = req.headers.authorization?.split(" ")[1];
+
+  if (!token) {
+    return next();
+  }
+
+  try {
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
+
+    if (user) {
+      const { password, ...safeUser } = user;
+      req.user = safeUser as any;
+    }
+    next();
+  } catch (err) {
+    // If token is invalid, just proceed without user info
+    next();
+  }
+};
 
 /**
  * Middleware to protect routes and ensure the user is authenticated.
@@ -32,7 +59,6 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
     }
 
     // 3. Attach standard user object to request for downstream access in controllers
-    // The password field is explicitly excluded by not fetching or removing it if necessary
     const { password, ...safeUser } = user;
     req.user = safeUser as any; 
     

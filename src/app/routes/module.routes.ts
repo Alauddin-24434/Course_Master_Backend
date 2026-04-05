@@ -18,6 +18,9 @@ router.get("/", moduleController.getAllModules);
 // Update a module
 router.patch("/:moduleId", protect, authorize("admin"), moduleController.updateModule);
 
+// Delete a module
+router.delete("/:moduleId", protect, authorize("admin"), moduleController.deleteModule);
+
 // Get modules for a specific course (student only)
 router.get(
   "/:courseId",
@@ -26,17 +29,6 @@ router.get(
   moduleController.getModuleByCourseId
 );
 
-// ==============================
-// LESSON ROUTES
-// ==============================
 
-// Add a new lesson to a module
-router.post("/lessons", moduleController.addLesson);
-
-// Get all lessons in a module
-router.get("/:moduleId/lessons", moduleController.getAllLessons);
-
-// Get a specific lesson by ID
-router.get("/:moduleId/lessons/:lessonId", moduleController.getLessonById);
 
 export const moduleRouter = router;

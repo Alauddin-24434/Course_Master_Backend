@@ -1,45 +1,137 @@
+import { prisma } from "../../lib/prisma";
 import { CustomAppError } from "../errors/customError";
-import { prisma } from "../config/prisma";
-import { SubmissionType } from "@prisma/client";
+import { SubmissionType } from "../interfaces/assignment.interface";
 
 /**
- * Handle Assignment operations for student tasks and curriculum management
+ * Create or update assignment
  */
-export const assignmentService = {
-  /**
-   * Create or update an assessment assignment for a specific lesson
-   * 
-   * This service manages the creation and modification of assignment 
-   * instructions linked directly to an individual instructional lesson.
-   * 
-   * @param payload - Assessment details including lessonId, description and submission type
-   * @returns The newly updated or created assignment record
-   */
-  createAssignment: async (payload: { 
-    lessonId: string, 
-    description: string, 
-    submissionType: SubmissionType | string 
-  }) => {
-    const { lessonId, description, submissionType } = payload;
+const createAssignment = async (payload: {
+  moduleId: string;
+  description: string;
+  submissionType: SubmissionType | string;
+}) => {
+  const { moduleId, description, submissionType } = payload;
 
-    // Verify the target lesson existence in our relational structure
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
-    if (!lesson) {
-      throw new CustomAppError(404, "Target lesson context not found for assignment creation");
-    }
+  const module = await prisma.module.findUnique({
+    where: { id: moduleId },
+  });
 
-    // Persist assignment record using relational UPSERT to handle both initial creation and later updates
-    return await prisma.assignment.upsert({
-      where: { lessonId },
-      update: { 
-        description, 
-        submissionType: submissionType as SubmissionType 
-      },
-      create: { 
-        lessonId, 
-        description, 
-        submissionType: (submissionType as SubmissionType) || SubmissionType.text 
-      }
-    });
+  if (!module) {
+    throw new CustomAppError(404, "Module not found");
   }
+
+  const assignment = await prisma.assignment.upsert({
+    where: { moduleId },
+    update: {
+      description,
+      submissionType: submissionType as SubmissionType,
+    },
+    create: {
+      moduleId,
+      description,
+      submissionType:
+        (submissionType as SubmissionType) || SubmissionType.text,
+    },
+  });
+
+  return assignment;
+};
+
+/**
+ * Get all assignments
+ */
+const getAssignmentsIntoIntrutorCourses = async (instructorId: string) => {
+  return await prisma.assignment.findMany({
+    where: {
+      module: {
+        course: {
+          instructorId: instructorId, // ✅ IMPORTANT
+        },
+      },
+    },
+    include: {
+      module: {
+        select: {
+          title: true,
+          course: {
+            select: { title: true },
+          },
+        },
+      },
+    },
+  });
+};
+
+/**
+ * Update assignment
+ */
+const updateAssignment = async (
+  id: string,
+  payload: Partial<{
+    description: string;
+    submissionType: SubmissionType | string;
+  }>
+) => {
+  return await prisma.assignment.update({
+    where: { id },
+    data: {
+      ...(payload.description && { description: payload.description }),
+      ...(payload.submissionType && {
+        submissionType: payload.submissionType as SubmissionType,
+      }),
+    },
+  });
+};
+
+/**
+ * Delete assignment
+ */
+const deleteAssignment = async (id: string) => {
+  return await prisma.assignment.delete({
+    where: { id },
+  });
+};
+
+
+
+/**
+ * Submit assignment
+ */
+const submitAssignment = async (assignmentId: string, userId: string, content: string) => {
+  const assignment = await prisma.assignment.findUnique({
+    where: { id: assignmentId }
+  });
+
+  if (!assignment) {
+    throw new CustomAppError(404, "Assignment not found");
+  }
+
+  const submission = await prisma.assignmentSubmission.upsert({
+    where: {
+      userId_assignmentId: {
+        userId,
+        assignmentId
+      }
+    },
+    update: {
+      content,
+      status: "submitted"
+    },
+    create: {
+      userId,
+      assignmentId,
+      content,
+    }
+  });
+
+  return submission;
+};
+
+// ✅ Bottom Export
+export const AssignmentService = {
+  createAssignment,
+  getAssignmentsIntoIntrutorCourses,
+  updateAssignment,
+  deleteAssignment,
+  submitAssignment,
 };

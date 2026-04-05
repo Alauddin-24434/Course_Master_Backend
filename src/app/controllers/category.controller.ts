@@ -23,7 +23,7 @@ const createCategory = catchAsyncHandler(async (req: Request, res: Response) => 
 // UPDATE a category
 // ==============================
 const updateCategory = catchAsyncHandler(async (req: Request, res: Response) => {
-  const category = await categoryService.updateCategory(req.params.id, req.body);
+  const category = await categoryService.updateCategory(req.params.id as string, req.body);
   sendResponse(res, 200, "Category updated successfully", category);
 });
 
@@ -31,7 +31,7 @@ const updateCategory = catchAsyncHandler(async (req: Request, res: Response) => 
 // DELETE a category
 // ==============================
 const deleteCategory = catchAsyncHandler(async (req: Request, res: Response) => {
-  const result = await categoryService.deleteCategory(req.params.id);
+  const result = await categoryService.deleteCategory(req.params.id as string);
   sendResponse(res, 200, "Category deleted successfully", result);
 });
 

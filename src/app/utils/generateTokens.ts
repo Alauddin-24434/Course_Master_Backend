@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { IUser } from "../interfaces/user.interface";
 dotenv.config()
 // Token generation helper for authentication
-export const generateTokens = (user: IUser) => {
+export const generateTokens = (user: { id: string; email: string; role: string }) => {
   // Access Token: Short-lived token for session authentication
   const accessToken = jwt.sign(
     { id: user.id, email: user.email, role: user.role },

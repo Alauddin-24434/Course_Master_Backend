@@ -1,58 +1,133 @@
+import { prisma } from "../../lib/prisma";
 import { CustomAppError } from "../errors/customError";
-import { prisma } from "../config/prisma";
+import { Prisma } from "@prisma/client";
 
-/**
- * Handle Quiz operations for students and administrative curriculum management
- */
 export const quizService = {
   /**
-   * Create or update a full quiz for a specific lesson
-   * 
-   * This operation manages both the Quiz entity and its multiple related Questions.
-   * It uses a database transaction to ensure that the quiz structure remains consistent.
-   * 
-   * @param payload - Course/Module context and the quiz structure (questions, options, etc.)
-   * @returns The newly created or updated quiz record with its questions
+   * Create or update quiz
    */
   createQuiz: async (payload: any) => {
-    // In our new relational model, we prefer lessonId for precise targeting
-    const { lessonId, quiz } = payload;
+    const { moduleId, quiz } = payload;
 
-    // Verify the target lesson exists in our database
-    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
-    if (!lesson) {
-      throw new CustomAppError(404, "Module/Lesson mismatch: Target lesson not found");
+    const module = await prisma.module.findUnique({
+      where: { id: moduleId },
+    });
+
+    if (!module) {
+      throw new CustomAppError(404, "Module not found");
     }
 
-    // Atomic transaction for quiz data persistence
-    return await prisma.$transaction(async (tx) => {
-      // 1. Create or Find the main Quiz container for the lesson
+    return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const quizContainer = await tx.quiz.upsert({
-        where: { lessonId },
-        update: {}, // No updates needed for the container itself
-        create: { lessonId }
+        where: { moduleId },
+        update: {},
+        create: { moduleId },
       });
 
-      // 2. Clear existing questions to perform a full overwrite with new content
       await tx.quizQuestion.deleteMany({
-        where: { quizId: quizContainer.id }
+        where: { quizId: quizContainer.id },
       });
 
-      // 3. Perform a bulk insert of new questions
       await tx.quizQuestion.createMany({
         data: quiz.questions.map((q: any) => ({
           quizId: quizContainer.id,
           question: q.question,
           options: q.options,
-          correctAnswer: Number(q.correctAnswer)
-        }))
+          correctAnswer: Number(q.correctAnswer),
+        })),
       });
 
-      // 4. Return the fully populated quiz with its new questions
       return await tx.quiz.findUnique({
         where: { id: quizContainer.id },
-        include: { questions: true }
+        include: {
+          questions: true,
+          module: {
+            select: {
+              title: true,
+              course: {
+                select: { title: true },
+              },
+            },
+          },
+        },
       });
     });
-  }
+  },
+
+  /**
+   * ✅ GET ONLY instructor's quizzes
+   */
+  getQuizzesByInstructor: async (instructorId: string) => {
+    return await prisma.quiz.findMany({
+      where: {
+        module: {
+          course: {
+            instructorId: instructorId, // 🔥 MAIN FILTER
+          },
+        },
+      },
+      include: {
+        module: {
+          select: {
+            title: true,
+            course: {
+              select: { title: true },
+            },
+          },
+        },
+        questions: true,
+      },
+    });
+  },
+
+  /**
+   * Delete quiz
+   */
+  deleteQuiz: async (id: string) => {
+    return await prisma.quiz.delete({
+      where: { id },
+    });
+  },
+
+  /**
+   * Update quiz
+   */
+  updateQuiz: async (id: string, payload: any) => {
+    return quizService.createQuiz(payload);
+  },
+
+  /**
+   * Submit quiz answers (student)
+   * payload: { quizId, answers: number[] } — answers[i] is the selected option index for question i
+   */
+  submitQuiz: async (quizId: string, userId: string, answers: number[]) => {
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: { questions: true },
+    });
+
+    if (!quiz) {
+      throw new CustomAppError(404, "Quiz not found");
+    }
+
+    // Auto-grade
+    let score = 0;
+    const total = quiz.questions.length;
+    quiz.questions.forEach((q, idx) => {
+      if (answers[idx] === q.correctAnswer) {
+        score++;
+      }
+    });
+
+    const submission = await prisma.quizSubmission.create({
+      data: {
+        quizId,
+        userId,
+        score,
+        total,
+      },
+    });
+
+    return { score, total, percentage: total > 0 ? Math.round((score / total) * 100) : 0, submission };
+  },
 };

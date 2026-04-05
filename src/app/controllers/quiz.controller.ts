@@ -1,4 +1,3 @@
-
 import { Request, Response } from "express";
 import { quizService } from "../services/quiz.service";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
@@ -12,6 +11,32 @@ const createQuiz = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 201, "Quiz created successfully", quiz);
 });
 
+// ==============================
+// GET quizzes (ONLY instructor)
+// ==============================
+const getAllQuizzes = catchAsyncHandler(async (req: Request, res: Response) => {
+  const instructorId = req.user?.id; // ✅ from protect middleware
+
+  const quizzes = await quizService.getQuizzesByInstructor(
+    instructorId as string
+  );
+
+  sendResponse(res, 200, "Quizzes fetched successfully", quizzes);
+});
+
+const updateQuiz = catchAsyncHandler(async (req: Request, res: Response) => {
+  const quiz = await quizService.updateQuiz(req.params.id as string, req.body);
+  sendResponse(res, 200, "Quiz updated successfully", quiz);
+});
+
+const deleteQuiz = catchAsyncHandler(async (req: Request, res: Response) => {
+  await quizService.deleteQuiz(req.params.id as string );
+  sendResponse(res, 200, "Quiz deleted successfully", null);
+});
+
 export const quizController = {
   createQuiz,
+  getAllQuizzes,
+  updateQuiz,
+  deleteQuiz,
 };

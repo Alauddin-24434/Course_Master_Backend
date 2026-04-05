@@ -1,77 +1,69 @@
-import { GetAllCoursesQuery, ICourse } from "../interfaces/course.interface";
+import {  ICourse } from "../interfaces/course.interface";
 import { CustomAppError } from "../errors/customError";
-import { prisma } from "../config/prisma";
-import { Prisma } from "@prisma/client";
+import { prisma } from "../../lib/prisma";
 
 /**
  * Create a new course entry in the database
- * 
- * This service handles creating the main course record and its 
- * initial batch information in a single atomic operation.
- * 
- * @param payload - Data containing course details and optional batch info
- * @returns The newly created course with relations
  */
-const createCourse = async (payload: any) => {
-  const { batch, ...courseData } = payload;
+const createCourse = async (payload: ICourse) => {
+  try {
+    const {
+      title,
+      description,
+      categoryId,
+      instructorId,
+      previewVideo,
+      price,
+      thumbnail,
+    } = payload;
 
-  return await prisma.course.create({
-    data: {
-      ...courseData,
-      // Create associated batch if provided in payload
-      batch: batch ? {
-        create: {
-          title: batch.title,
-          startDate: new Date(batch.startDate),
-          endDate: batch.endDate ? new Date(batch.endDate) : null,
-        }
-      } : undefined
-    },
-    include: {
-      batch: true,
-      category: true
-    }
-  });
+    const result = await prisma.course.create({
+      data: {
+        title,
+        description,
+        categoryId,
+        instructorId,
+        previewVideo,
+        price,
+        thumbnail,
+      } as any,
+    });
+
+    return result;
+  } catch (error: any) {
+    console.error("❌ Error creating course:", error.message);
+    throw new Error("Course creation failed");
+  }
 };
 
 /**
  * Retrieve a list of courses with filtering, search, and pagination
- * 
- * @param query - Contains search term, categoryID, page, limit, and sort options
  */
-const getAllCourses = async (query: GetAllCoursesQuery) => {
+const getAllCourses = async (query: any) => {
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const skip = (page - 1) * limit;
 
-  // Build the filter conditions for PostgreSQL
-  const where: Prisma.CourseWhereInput = {
-    AND: []
-  };
+  const where: any = {};
 
-  // Case-insensitive search on title or instructor
   if (query.search) {
-    (where.AND as Prisma.CourseWhereInput[]).push({
-      OR: [
-        { title: { contains: query.search, mode: 'insensitive' } },
-        { instructor: { contains: query.search, mode: 'insensitive' } }
-      ]
-    });
+    where.OR = [
+      { title: { contains: query.search, mode: "insensitive" } },
+      { instructor: { name: { contains: query.search, mode: "insensitive" } } },
+    ];
   }
 
-  // Exact match filter for category
   if (query.category) {
-    (where.AND as Prisma.CourseWhereInput[]).push({ categoryId: query.category });
+    where.categoryId = query.category;
   }
 
-  // Determine sort order (default: newest first)
-  let orderBy: Prisma.CourseOrderByWithRelationInput = { createdAt: 'desc' };
+  let orderBy: any = { createdAt: "desc" };
+
   if (query.sort) {
     const [field, order] = query.sort.split(":");
-    orderBy = { [field]: order === "desc" ? "desc" : "asc" };
+    orderBy = { [field as string]: order === "desc" ? "desc" : "asc" };
   }
 
-  // Execute count and data fetch in parallel for better performance
   const [courses, total] = await Promise.all([
     prisma.course.findMany({
       where,
@@ -80,43 +72,49 @@ const getAllCourses = async (query: GetAllCoursesQuery) => {
       take: limit,
       include: {
         category: true,
-        batch: true,
+        instructor: {
+          select: { name: true, avatar: true }
+        },
         _count: {
-          select: { enrolledUsers: true }
-        }
-      }
+          select: { enrolledUsers: true },
+        },
+      } as any,
     }),
-    prisma.course.count({ where })
+    prisma.course.count({ where }),
   ]);
 
   return {
     courses,
     total,
     page,
-    totalPages: Math.ceil(total / limit)
+    totalPages: Math.ceil(total / limit),
   };
 };
 
 /**
- * Fetch full details of a specific course including its modules and lessons
+ * Fetch full details of a specific course including its modules and lessons.
  */
-const getCourseById = async (id: string) => {
+const getCourseById = async (id: string, userId?: string) => {
   const course = await prisma.course.findUnique({
     where: { id },
     include: {
       category: true,
-      batch: true,
+      instructor: {
+        select: { name: true, avatar: true, bio: true }
+      },
       modules: {
         include: {
+          // ✅ assignment and quiz are now on the module level
+          assignment: true,
+          quiz: { include: { questions: true } },
           lessons: {
-            include: {
-              assignment: true,
-              quiz: true
-            },
             orderBy: { order: 'asc' }
           }
         },
         orderBy: { order: 'asc' }
+      },
+      _count: {
+        select: { enrolledUsers: true }
       }
     }
   });
@@ -125,14 +123,19 @@ const getCourseById = async (id: string) => {
     throw new CustomAppError(404, "Course not found in our records");
   }
 
-  return course;
+  let isEnrolled = false;
+  if (userId) {
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId: id } }
+    });
+    isEnrolled = !!enrollment;
+  }
+
+  return { ...course, isEnrolled };
 };
 
 /**
  * Update course information
- * 
- * @param id - Target course ID
- * @param payload - Partial data to update
  */
 const updateCourse = async (id: string, payload: Partial<ICourse>) => {
   const existing = await prisma.course.findUnique({ where: { id } });
@@ -143,7 +146,7 @@ const updateCourse = async (id: string, payload: Partial<ICourse>) => {
   return await prisma.course.update({
     where: { id },
     data: payload as any,
-    include: { batch: true, category: true }
+    include: { category: true } as any
   });
 };
 
@@ -161,65 +164,9 @@ const deleteCourse = async (id: string) => {
 };
 
 /**
- * Get courses enrolled by a specific student with calculated progress
- */
-const getMyCourses = async (userId: string) => {
-  // Fetch user enrollments along with course module/lesson data
-  const enrollments = await prisma.enrollment.findMany({
-    where: { userId },
-    include: {
-      course: {
-        include: {
-          modules: {
-            include: {
-              lessons: true
-            }
-          }
-        }
-      }
-    }
-  });
-
-  // Calculate completion percentage for each enrolled course
-  const myCourses = await Promise.all(enrollments.map(async (enrollment) => {
-    const course = enrollment.course;
-    
-    // Flatten all lessons across modules to get total count
-    const allLessonIds = course.modules.flatMap(m => m.lessons.map(l => l.id));
-    const totalLessons = allLessonIds.length;
-
-    // Count how many of these specific lessons the user has completed
-    const completedCount = await prisma.completedLesson.count({
-      where: {
-        userId,
-        lessonId: { in: allLessonIds }
-      }
-    });
-
-    const progressPercentage = totalLessons > 0 
-      ? Math.round((completedCount / totalLessons) * 100) 
-      : 0;
-
-    return {
-      id: course.id,
-      title: course.title,
-      thumbnail: course.thumbnail,
-      instructor: course.instructor,
-      totalLessons,
-      completedLessonsCount: completedCount,
-      progressPercentage,
-      lastActivity: enrollment.lastActivity
-    };
-  }));
-
-  return myCourses;
-};
-
-/**
  * Mark a specific lesson as completed for the authenticated user
  */
 const completeLesson = async (userId: string, courseId: string, lessonId: string) => {
-  // 1. Verify that the user is actually enrolled in the course
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId } }
   });
@@ -228,14 +175,12 @@ const completeLesson = async (userId: string, courseId: string, lessonId: string
     throw new CustomAppError(403, "Access denied: You are not enrolled in this course");
   }
 
-  // 2. Mark lesson as completed (upsert ensures no duplicate error if already marked)
   await prisma.completedLesson.upsert({
     where: { userId_lessonId: { userId, lessonId } },
     create: { userId, lessonId },
-    update: {} // No changes needed if already exists
+    update: {}
   });
 
-  // 3. Update the last activity timestamp for the enrollment
   await prisma.enrollment.update({
     where: { id: enrollment.id },
     data: { lastActivity: new Date() }
@@ -243,20 +188,52 @@ const completeLesson = async (userId: string, courseId: string, lessonId: string
 };
 
 /**
- * Enroll a user into a course
+ * Get all courses the current user is enrolled in with progress stats
  */
-const enrollCourse = async (userId: string, courseId: string) => {
-  // Check if course exists
-  const course = await prisma.course.findUnique({ where: { id: courseId } });
-  if (!course) {
-    throw new CustomAppError(404, "Enrollment failed: Course not found");
-  }
+const getMyCourses = async (userId: string) => {
+  const enrollments = await prisma.enrollment.findMany({
+    where: { userId },
+    include: {
+      course: {
+        include: {
+          modules: {
+            include: {
+              lessons: {
+                select: { id: true }
+              }
+            }
+          }
+        }
+      }
+    } as any,
+    orderBy: { lastActivity: 'desc' }
+  });
 
-  // Create enrollment record
-  await prisma.enrollment.upsert({
-    where: { userId_courseId: { userId, courseId } },
-    create: { userId, courseId },
-    update: {} // Do nothing if already enrolled
+  const completedLessons = await prisma.completedLesson.findMany({
+    where: { userId },
+    select: { lessonId: true }
+  });
+  const completedLessonIds = new Set(completedLessons.map(cl => cl.lessonId));
+
+  return enrollments.map((enrollment: any) => {
+    const course = enrollment.course;
+    const allLessons = course.modules.flatMap((m: any) => m.lessons);
+    const totalLessons = allLessons.length;
+    const completedLessonsCount = allLessons.filter((l: any) => completedLessonIds.has(l.id)).length;
+    const progressPercentage = totalLessons > 0 
+      ? Math.round((completedLessonsCount / totalLessons) * 100) 
+      : 0;
+
+    return {
+      id: course.id,
+      title: course.title,
+      thumbnail: course.thumbnail,
+      instructor: course.instructor,
+      totalLessons,
+      completedLessonsCount,
+      progressPercentage,
+      lastActivity: enrollment.lastActivity
+    };
   });
 };
 
@@ -268,5 +245,4 @@ export const courseService = {
   deleteCourse,
   getMyCourses,
   completeLesson,
-  enrollCourse,
 };

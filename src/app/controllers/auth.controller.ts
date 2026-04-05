@@ -18,9 +18,13 @@ const signup = catchAsyncHandler(async (req: Request, res: Response) => {
   // Persist user to PostgreSQL
   const user = await authServices.signup(validated as IUser);
 
-  // Generate session tokens
-  const { accessToken, refreshToken } = generateTokens(user as IUser);
-  
+  const payload : { id: string; email: string; role: string } = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  };
+  const { accessToken, refreshToken } = generateTokens(payload);
+ 
   // Set the refresh token as a secure httpOnly cookie
   setRefreshTokenCookie(res, refreshToken);
 
@@ -39,7 +43,13 @@ const login = catchAsyncHandler(async (req: Request, res: Response) => {
   const user = await authServices.login(validated as IUserLogin);
 
   // Issue identification tokens
-  const { accessToken, refreshToken } = generateTokens(user as IUser);
+  // token payload includes user ID, email, and role for authorization purposes
+  const payload : { id: string; email: string; role: string } = {
+    id: user.id,
+    email: user.email,
+    role: user.role,
+  };
+  const { accessToken, refreshToken } = generateTokens(payload);
   
   // Store session persistencer via secure cookie
   setRefreshTokenCookie(res, refreshToken);

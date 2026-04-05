@@ -17,9 +17,6 @@ export const getDashboardAnalytics = catchAsyncHandler(
     const analyticsData = await dashboardService.getDashboardAnalytics(user);
 
     // Provide a consistent response with the aggregated data
-    sendResponse(res, 200, "Dashboard analytics successfully retrieved", {
-      role: user.role,
-      data: analyticsData
-    });
+    sendResponse(res, 200, "Dashboard analytics successfully retrieved", analyticsData);
   }
 );

@@ -1,8 +1,9 @@
-import { prisma } from "../config/prisma";
+
 import { CustomAppError } from "../errors/customError";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { IUser, IUserLogin } from "../interfaces/user.interface";
+import { IUser, IUserLogin, UserRole } from "../interfaces/user.interface";
+import { prisma } from "../../lib/prisma";
 import { Role } from "@prisma/client";
 
 /**
@@ -12,8 +13,14 @@ import { Role } from "@prisma/client";
  * @returns The created user object without the password
  */
 const signup = async (payload: IUser) => {
+  console.log("Received signup request with data:", payload);
   // Check if a user with the same email already exists
-  const existingUser = await prisma.user.findUnique({
+  if (!payload.email) {
+    throw new CustomAppError(400, "User email is missing in request data");
+  }
+
+ 
+  const existingUser = await prisma.user.findFirst({
     where: { email: payload.email },
   });
 
@@ -23,18 +30,25 @@ const signup = async (payload: IUser) => {
 
   // Hash the password before saving for security
   const hashedPassword = await bcrypt.hash(payload.password!, 12);
-
+console.log("Password hashed successfully for email:", payload, hashedPassword);
   // Create new user in PostgreSQL using Prisma
+
+const validRoles = ["student", "instructor", "admin"];
+
+const role = validRoles.includes(payload.role?.toLowerCase())
+  ? payload.role.toLowerCase()
+  : "student";
   const newUser = await prisma.user.create({
     data: {
       name: payload.name,
       email: payload.email,
       password: hashedPassword,
-      role: (payload.role as Role) || Role.student,
-      bio: payload.bio || null,
-      avatar: payload.avatar || null,
+      role:role as Role,
     },
   });
+
+
+  console.log("User created successfully with ID:", newUser);
 
   // Remove password from response object for security
   const { password, ...userWithoutPassword } = newUser;
@@ -49,7 +63,11 @@ const signup = async (payload: IUser) => {
  */
 const login = async (payload: IUserLogin) => {
   // Find user by email in PostgreSQL
-  const user = await prisma.user.findUnique({
+  if (!payload.email) {
+    throw new CustomAppError(400, "User email is missing in request data");
+  }
+  
+  const user = await prisma.user.findFirst({
     where: { email: payload.email },
   });
 
@@ -84,7 +102,7 @@ const refreshToken = async (token: string) => {
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as {
       id: string;
       email: string;
-      role: Role;
+      role: UserRole;
     };
 
     // Generate a new access token with 1 hour expiration

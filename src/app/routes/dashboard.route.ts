@@ -4,6 +4,6 @@ import { authorize, protect } from "../middlewares/auth.middleware";
 
 const router = express.Router();
 
-router.get("/analytics",protect, authorize("admin", "student"), getDashboardAnalytics);
+router.get("/analytics",protect, authorize("admin", "student", "instructor"), getDashboardAnalytics);
 
 export const dashboardRouter= router;

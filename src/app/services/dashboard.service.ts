@@ -1,6 +1,6 @@
-import { prisma } from "../config/prisma";
-import { Role } from "@prisma/client";
-import { IUser } from "../interfaces/user.interface";
+
+import { prisma } from "../../lib/prisma";
+import { IUser, UserRole } from "../interfaces/user.interface";
 
 /**
  * Service to aggregate analytical insights and statistics 
@@ -17,47 +17,129 @@ export const dashboardService = {
    * @returns Detailed statistics tailored to the specific user role
    */
   async getDashboardAnalytics(user: IUser) {
-    const role = user.role as Role;
+    const role = user.role as UserRole;
+    const userId = user.id;
 
     // ------------ ADMINISTRATOR ANALYTICS OVERVIEW ------------
-    if (role === Role.admin) {
-      // Perform parallel count operations to minimize database response time
-      const [totalStudents, totalCourses] = await Promise.all([
-        prisma.user.count({ where: { role: Role.student } }),
-        prisma.course.count()
+    if (role === UserRole.ADMIN) {
+      const [totalStudents, totalInstructors, totalCourses, coursesData, totalEnrollments] = await Promise.all([
+        prisma.user.count({ where: { role: UserRole.STUDENT } }),
+        prisma.user.count({ where: { role: UserRole.INSTRUCTOR } }),
+        prisma.course.count(),
+        prisma.course.findMany({
+          select: { price: true, _count: { select: { enrolledUsers: true } } }
+        }),
+        prisma.enrollment.count()
       ]);
+
+      const totalRevenue = coursesData.reduce((sum, course) => {
+        return sum + (course.price * course._count.enrolledUsers);
+      }, 0);
+
+      const engagementRate = totalStudents > 0 
+        ? Math.min(Math.round((totalEnrollments / totalStudents) * 100), 100)
+        : 0;
 
       return {
         role,
         statistics: {
           totalStudents,
-          totalCourses
+          totalInstructors,
+          totalCourses,
+          totalRevenue,
+          totalEnrollments,
+          engagementRate
         },
         message: "Full administrative overview generated for dashboard"
       };
     }
 
-    // ------------ PERSONALIZED STUDENT DASHBOARD ------------
-    if (role === Role.student) {
-      const userId = user.id;
-
-      // Efficiently count enrollment records and total platform courses for user comparison
-      const [myEnrolledCount, totalAvailableCount] = await Promise.all([
-        prisma.enrollment.count({ where: { userId } }),
-        prisma.course.count({ where: { isPublished: true } }) // Only count courses available for students
+    // ------------ INSTRUCTOR ANALYTICS ------------
+    if (role === UserRole.INSTRUCTOR) {
+      const [myCourses, myCoursesCount, totalLessons, totalEnrolledData] = await Promise.all([
+        prisma.course.findMany({
+          where: { instructorId: userId },
+          select: { 
+            id: true, 
+            price: true, 
+            _count: { select: { enrolledUsers: true } } 
+          }
+        }),
+        prisma.course.count({ where: { instructorId: userId } }),
+        prisma.lesson.count({ 
+          where: { module: { course: { instructorId: userId } } } 
+        }),
+        prisma.enrollment.count({
+          where: { course: { instructorId: userId } }
+        })
       ]);
+
+      const myRevenue = myCourses.reduce((sum, course) => {
+        return sum + (course.price * course._count.enrolledUsers);
+      }, 0);
+
+      const uniqueStudents = await prisma.user.count({
+        where: { enrolledCourses: { some: { course: { instructorId: userId } } } }
+      });
 
       return {
         role,
         statistics: {
-          myCourses: myEnrolledCount,
-          totalCourses: totalAvailableCount
+          totalCourses: myCoursesCount,
+          totalStudents: uniqueStudents,
+          totalEnrollments: totalEnrolledData,
+          totalRevenue: myRevenue,
+          totalLessons: totalLessons
+        },
+        message: "Instructor performance overview ready"
+      };
+    }
+
+    // ------------ PERSONALIZED STUDENT DASHBOARD ------------
+    if (role === UserRole.STUDENT) {
+      const [myEnrolledCount, totalCompletedLessons, pendingAssignments, pendingQuizzes] = await Promise.all([
+        prisma.enrollment.count({ where: { userId } }),
+        prisma.completedLesson.count({ where: { userId } }),
+        prisma.assignment.count({
+          where: { module: { course: { enrolledUsers: { some: { userId } } } } }
+        }),
+        prisma.quiz.count({
+          where: { module: { course: { enrolledUsers: { some: { userId } } } } }
+        })
+      ]);
+
+      // Roughly calculate course completions (100% progress)
+      const myEnrollments = await prisma.enrollment.findMany({
+        where: { userId },
+        include: { course: { include: { modules: { include: { lessons: { select: { id: true } } } } } } }
+      });
+
+      let completedCoursesCount = 0;
+      for (const enrollment of myEnrollments) {
+        const totalLessonsInCourse = enrollment.course.modules.reduce((acc, m) => acc + m.lessons.length, 0);
+        const completedInThisCourse = await prisma.completedLesson.count({
+          where: { 
+            userId, 
+            lesson: { module: { courseId: enrollment.courseId } } 
+          }
+        });
+        if (totalLessonsInCourse > 0 && completedInThisCourse === totalLessonsInCourse) {
+          completedCoursesCount++;
+        }
+      }
+
+      return {
+        role,
+        statistics: {
+          enrolledCourses: myEnrolledCount,
+          completedCourses: completedCoursesCount,
+          lessonsCompleted: totalCompletedLessons,
+          pendingTasks: pendingAssignments + pendingQuizzes
         },
         message: "Student activity dashboard snapshot ready"
       };
     }
 
-    // ------------ DEFAULT / GUEST FALLBACK ------------
     return {
       role,
       message: "No specific analytical data is available for this role"

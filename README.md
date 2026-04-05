@@ -1,139 +1,256 @@
-# CourseMaster Backend 🚀
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-v20+-43853D?style=for-the-badge&logo=node.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Express-5.x-000000?style=for-the-badge&logo=express&logoColor=white" />
+  <img src="https://img.shields.io/badge/Prisma-7.x-2D3748?style=for-the-badge&logo=prisma&logoColor=white" />
+  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/Stripe-22.x-635BFF?style=for-the-badge&logo=stripe&logoColor=white" />
+</p>
 
-CourseMaster is a professional-grade Learning Management System (LMS) backend designed for scalability and performance. Built with a modern tech stack, it provides a comprehensive set of features for managing online courses, student progress, and interactive learning materials.
+# 🚀 CourseMaster — Backend API
 
-## ✨ Key Features
+> A production-ready, modular REST API for a full-featured online learning platform — built with **Express 5**, **Prisma 7**, **PostgreSQL**, and **Stripe**.
 
-- **Robust Authentication**: Secure JWT-based authentication system with role-based access control (RBAC) for Admins and Students.
-- **Comprehensive Course Management**: Create, update, and organize courses with categories, batches, and rich metadata.
-- **Hierarchical Content Structure**: Logical grouping of content into Courses → Modules → Lessons.
-- **Interactive Quizzes & Assignments**: Support for multiple-choice quizzes and text/link-based assignments.
-- **Progress Tracking**: Real-time tracking of lesson completion and user activity.
-- **Unified Dashboard**: Aggregated statistics and insights for both students and administrators.
-- **Enterprise-Grade Security**: Implementation of Helmet, CORS, Rate Limiting, and input validation via Zod.
+---
 
-## 🛠️ Tech Stack
+## ✨ Features
 
-- **Runtime**: [Node.js](https://nodejs.org/)
-- **Framework**: [Express.js](https://expressjs.com/)
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **ORM**: [Prisma](https://www.prisma.io/)
-- **Database**: [PostgreSQL](https://www.postgresql.org/)
-- **Validation**: [Zod](https://zod.dev/)
-- **Auth**: [JWT](https://jwt.io/) & [Bcryptjs](https://github.com/dcodeIO/bcrypt.js)
-- **Security**: Helmet, Express-rate-limit, CORS
+| Feature | Description |
+|---|---|
+| 🔐 **JWT Authentication** | Secure signup, login, refresh token flow with HTTP-only cookies |
+| 👥 **Role-Based Access** | `student`, `instructor`, `admin` roles with route-level guards |
+| 📚 **Course Management** | Full CRUD with categories, modules, lessons, search & pagination |
+| 🎬 **Video Lessons** | YouTube / direct URL support with ordered lesson progression |
+| 📝 **Assignments** | Module-scoped assignments with text/link submission support |
+| 🧠 **Quizzes** | Multi-question quizzes with auto-grading engine |
+| 💳 **Stripe Payments** | Checkout sessions, webhook handling for success/fail/refund |
+| 📊 **Student Progress** | Lesson completion tracking with linear unlock progression |
+| 🎓 **Enrollment System** | Free + paid enrollment flows with enrollment verification |
+| 📈 **Admin Dashboard** | Analytics: revenue, user counts, course stats |
+| ⭐ **Reviews** | Student testimonials/review system |
+| 🛡️ **Rate Limiting** | Express rate-limiter to prevent abuse |
+
+---
 
 ## 📁 Project Structure
 
-```text
-src/
-├── app/
-│   ├── config/         # App configurations (Prisma, Cloudinary, etc.)
-│   ├── controllers/    # Request handlers
-│   ├── interfaces/     # TypeScript interfaces/types
-│   ├── middlewares/    # Custom Express middlewares (Auth, Error handling)
-│   ├── routes/         # API route definitions
-│   ├── services/       # Business logic layer
-│   ├── utils/          # Helper functions
-│   └── validations/    # Zod validation schemas
-├── server.ts           # Server entry point
-└── index.ts            # App initialization
+```
+courseMaster-backend/
+├── prisma/
+│   └── schema.prisma            # Database schema (15+ models)
+├── src/
+│   ├── index.ts                 # Express app setup, middleware, routes
+│   ├── server.ts                # Server bootstrap
+│   ├── lib/
+│   │   ├── prisma.ts            # Prisma client singleton
+│   │   └── stripe.ts            # Stripe client instance
+│   └── app/
+│       ├── controllers/
+│       │   ├── auth.controller.ts
+│       │   ├── course.controller.ts
+│       │   ├── enroll.controller.ts
+│       │   ├── assignment.controller.ts
+│       │   ├── quiz.controller.ts
+│       │   ├── studentSubmission.controller.ts
+│       │   └── webhook.controller.ts
+│       ├── services/
+│       │   ├── auth.service.ts
+│       │   ├── course.service.ts
+│       │   ├── enroll.service.ts
+│       │   ├── assignment.service.ts
+│       │   ├── quiz.service.ts
+│       │   ├── lesson.service.ts
+│       │   ├── module.service.ts
+│       │   ├── category.service.ts
+│       │   ├── dashboard.service.ts
+│       │   ├── review.service.ts
+│       │   └── user.service.ts
+│       ├── routes/
+│       │   ├── baseRouter.ts              # Central route registry
+│       │   ├── auth.route.ts
+│       │   ├── course.route.ts
+│       │   ├── enroll.route.ts
+│       │   ├── assignment.routes.ts
+│       │   ├── quiz.routes.ts
+│       │   ├── studentSubmission.route.ts  # Student submit endpoints
+│       │   ├── webhook.route.ts           # Stripe webhook
+│       │   ├── lesson.route.ts
+│       │   ├── module.routes.ts
+│       │   ├── category.route.ts
+│       │   ├── dashboard.route.ts
+│       │   ├── review.route.ts
+│       │   └── user.route.ts
+│       ├── middlewares/
+│       │   ├── auth.middleware.ts          # JWT protect + role authorize
+│       │   └── globalErrorHandler.ts
+│       ├── validations/                   # Zod validation schemas
+│       ├── interfaces/                    # TypeScript type definitions
+│       ├── errors/
+│       │   └── customError.ts             # Custom error class
+│       └── utils/
+│           ├── catchAsyncHandler.ts
+│           └── sendResponse.ts
+├── .env                                   # Environment variables
+├── package.json
+└── tsconfig.json
 ```
 
-## 🚀 Getting Started
+---
+
+## 🗄️ Database Schema
+
+```mermaid
+erDiagram
+    User ||--o{ Enrollment : enrolls
+    User ||--o{ Course : teaches
+    User ||--o{ Payment : pays
+    User ||--o{ Review : writes
+    User ||--o{ CompletedLesson : completes
+    User ||--o{ AssignmentSubmission : submits
+    User ||--o{ QuizSubmission : attempts
+
+    Course ||--o{ Module : contains
+    Course ||--o{ Enrollment : has
+    Course ||--o{ Payment : receives
+    Course }o--|| Category : belongs_to
+
+    Module ||--o{ Lesson : contains
+    Module ||--o| Assignment : has
+    Module ||--o| Quiz : has
+
+    Quiz ||--o{ QuizQuestion : has
+    Quiz ||--o{ QuizSubmission : receives
+
+    Assignment ||--o{ AssignmentSubmission : receives
+
+    Lesson ||--o{ CompletedLesson : tracked_by
+```
+
+---
+
+## 🔌 API Endpoints
+
+### 🔐 Auth
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/auth/signup` | Register a new user |
+| `POST` | `/api/v1/auth/login` | Login + get JWT tokens |
+| `POST` | `/api/v1/auth/refresh` | Refresh access token |
+
+### 📚 Courses
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/courses` | List courses (search, filter, paginate) |
+| `GET` | `/api/v1/courses/:id` | Get course details |
+| `POST` | `/api/v1/courses` | Create course (instructor) |
+| `PATCH`| `/api/v1/courses/:id` | Update course |
+| `DELETE`| `/api/v1/courses/:id` | Delete course |
+| `POST` | `/api/v1/courses/complete-lesson` | Mark lesson completed |
+| `GET` | `/api/v1/courses/my-courses` | Get enrolled courses with progress |
+
+### 🎓 Enrollments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/enrollments` | Enroll (free) or start Stripe checkout (paid) |
+| `GET` | `/api/v1/enrollments/me` | Get user enrollments |
+| `GET` | `/api/v1/enrollments/courses/:courseId` | Get enrolled course curriculum |
+
+### 📝 Student Submissions
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/submissions/assignments/submit` | Submit an assignment |
+| `POST` | `/api/v1/submissions/quizs/submit` | Submit quiz answers (auto-graded) |
+
+### 💳 Payments & Webhooks
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/webhook` | Stripe webhook (success, expired, refund) |
+
+### 📦 Other Resources
+| Resource | Endpoints |
+|----------|-----------|
+| Categories | CRUD at `/api/v1/categories` |
+| Modules | CRUD at `/api/v1/modules` |
+| Lessons | CRUD at `/api/v1/lessons` |
+| Assignments | CRUD at `/api/v1/assignments` |
+| Quizzes | CRUD at `/api/v1/quizs` |
+| Reviews | CRUD at `/api/v1/reviews` |
+| Dashboard | Stats at `/api/v1/dashboard` |
+| Users | Manage at `/api/v1/users` |
+
+---
+
+## ⚡ Quick Start
 
 ### Prerequisites
+- Node.js v20+
+- PostgreSQL database
+- Stripe account (for payments)
 
-- Node.js (v18+ recommended)
-- PostgreSQL database instance
-- npm or yarn
+### 1. Clone & Install
+```bash
+git clone <repo-url>
+cd courseMaster-backend
+npm install
+```
 
-### Installation
+### 2. Environment Variables
+Create a `.env` file:
+```env
+DATABASE_URL="postgresql://user:password@host:5432/dbname"
+JWT_SECRET="your-jwt-secret"
+JWT_REFRESH_SECRET="your-refresh-secret"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+FRONTEND_URL="http://localhost:3000"
+PORT=5000
+```
 
-1. **Clone the repository**:
-   ```bash
-   git clone <repository-url>
-   cd coursemaster-backend
-   ```
+### 3. Database Setup
+```bash
+npx prisma db push      # Push schema to database
+npx prisma generate      # Generate Prisma Client
+```
 
-2. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Server starts at `http://localhost:5000`
 
-3. **Environment Setup**:
-   Create a `.env` file in the root directory and add the following variables:
-   ```env
-   DATABASE_URL="postgresql://coursemaster_user:coursemaster_pass@localhost:5432/coursemaster_db?schema=public"
+### 5. Build for Production
+```bash
+npm run build
+npm start
+```
 
-   # Auth Config
-   JWT_SECRET="your_jwt_access_secret"
-   JWT_REFRESH_SECRET="your_jwt_refresh_secret"
-   JWT_EXPIRES_IN="1d"
-   REFRESH_TOKEN_EXPIRES_IN="7d"
+---
 
-   # Server Config
-   PORT=5000
-   NODE_ENV="development"
-   ```
+## 🔒 Security
+- **JWT** access + refresh tokens stored in HTTP-only cookies
+- **Bcrypt** password hashing
+- **Zod** request validation on all endpoints
+- **CORS** configured for specific frontend origins
+- **Rate Limiting** — 100 requests per 15 minutes per IP
+- **Stripe Webhook Signature** verification for payment security
 
-4. **Prisma Setup**:
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
+---
 
-5. **Run the application**:
-   ```bash
-   # Development mode
-   npm run dev
+## 🧪 Tech Stack
 
-   # Production build
-   npm run build
-   npm start
-   ```
+| Technology | Purpose |
+|-----------|---------|
+| Express 5 | HTTP framework |
+| TypeScript 5.9 | Type safety |
+| Prisma 7 | ORM + migrations |
+| PostgreSQL | Relational database |
+| Stripe | Payment processing |
+| Zod | Runtime validation |
+| JWT | Authentication |
+| Bcrypt | Password hashing |
 
-### 🐳 Run with Docker
+---
 
-This application is containerized for easy deployment. Ensure you have Docker and Docker Compose installed.
-
-1. **Build and run the containers**:
-   ```bash
-   docker compose up -d --build
-   ```
-
-2. **Verify the services**:
-   ```bash
-   docker compose ps
-   ```
-
-3. **Check logs**:
-   ```bash
-   docker compose logs -f app
-   ```
-
-## 📡 API Endpoints
-
-| Category | Endpoint | Description |
-|----------|----------|-------------|
-| **Auth** | `POST /api/v1/auth/signup` | Register a new user |
-| | `POST /api/v1/auth/login` | Authenticate user & get token |
-| **Courses** | `GET /api/v1/courses` | Fetch all courses |
-| | `GET /api/v1/courses/:id` | Get course details |
-| **Modules** | `GET /api/v1/modules` | Manage course modules |
-| **Dashboard**| `GET /api/v1/dashboard` | Get analytics and overview |
-| **Category** | `GET /api/v1/categories` | Manage course categories |
-
-*(Detailed API documentation can be found in the `/docs` or by inspecting the route files)*
-
-## 🛡️ Security
-
-The application includes several security layers:
-- **Rate Limiting**: Prevents brute-force attacks.
-- **Helmet**: Sets various HTTP headers for security.
-- **CORS**: Configured for secure cross-origin requests.
-- **Zod**: Strict type-safe input validation.
-
-## 📄 License
-
-This project is licensed under the [ISC License](LICENSE).
+<p align="center">
+  <b>Built with ❤️ for CourseMaster</b>
+</p>

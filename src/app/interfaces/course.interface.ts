@@ -1,31 +1,114 @@
-// interfaces/course.interface.ts
+// src/interfaces/course.interface.ts
 
-export interface ICategory {
 
-  name: string;    
- 
-}
-
+import { ICategory } from "./category.interface";
+import { IUser, SubmissionType } from "./user.interface";
 
 export interface ICourse {
+  id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   thumbnail: string;
   previewVideo: string;
   price: number;
-  category: string;
-  tags?: string[];
-  instructor: string;
-  courseIncludes?: string[];
-  isPublished?: boolean;
+  instructorId: string;
+  instructor?: IUser;
+  isPublished: boolean;
+  categoryId: string;
+
+
+  category?: ICategory;
+  modules?: IModule[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  _count?: {
+    enrolledUsers: number;
+  };
 }
-// ==============================
-// GET all courses with advanced features
-// ==============================
-export interface GetAllCoursesQuery {
-  page?: number;
-  limit?: number;
-  search?: string;          // search by title or instructor
-  category?: string;        // filter by category ID
-  sort?: string;            // e.g., 'price:asc' or 'price:desc'
+
+export interface IModule {
+  id: string;
+  title: string;
+  courseId: string;
+  course?: ICourse;
+  lessons?: ILesson[];
+  order: number;
 }
+
+
+export interface IAssignment {
+  id: string;
+  description: string;
+  submissionType: SubmissionType;
+  lessonId: string;
+  lesson?: ILesson;
+}
+
+export interface IQuiz {
+  id: string;
+  lessonId: string;
+  lesson?: ILesson;
+  questions?: IQuizQuestion[];
+}
+
+export interface IQuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+  quizId: string;
+  quiz?: IQuiz;
+}
+
+export interface IEnrollment {
+  id: string;
+  userId: string;
+  user?: IUser;
+  courseId: string;
+  course?: ICourse;
+  enrolledAt: string | Date;
+  lastActivity: string | Date;
+}
+
+export interface ICompletedLesson {
+  id: string;
+  userId: string;
+  user?: IUser;
+  lessonId: string;
+  lesson?: ILesson;
+  completedAt: string | Date;
+}
+
+export interface ILesson {
+  id: string;
+  title: string;
+  videoUrl: string;
+  duration: number;
+  moduleId: string;
+  module?: IModule;
+  assignment?: IAssignment | null;
+  quiz?: IQuiz | null;
+  order: number;
+  completedByUsers?: ICompletedLesson[];
+}
+
+// Result of getMyCourses in backend
+export interface IMyCourse {
+  id: string;
+  title: string;
+  thumbnail: string;
+  instructor: string | null;
+  totalLessons: number;
+  completedLessonsCount: number;
+  progressPercentage: number;
+  lastActivity: string | Date;
+}
+
+// Wrapper type for API response aligned with backend/src/app/utils/sendResponse.ts
+export interface IApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+

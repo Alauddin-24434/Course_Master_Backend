@@ -8,9 +8,12 @@ import { sendResponse } from "../utils/sendResponse";
 // CREATE a course
 // ==============================
 const createCourse = catchAsyncHandler(async (req: Request, res: Response) => {
-  const course = await courseService.createCourse(req.body);
+  console.log("Received course creation request with data:", req.body);
+  const instructorId = req.user!.id;
+  const course = await courseService.createCourse({ ...req.body, instructorId });
   sendResponse(res, 201, "Course created successfully", course);
 });
+
 
 // ==============================
 // GET all courses with advanced features
@@ -25,6 +28,7 @@ const getAllCourses = catchAsyncHandler(async (req: Request, res: Response) => {
     category: category?.toString(),
     sort: sort?.toString(),
   });
+  console.log("Fetched courses with query:", req.query, "Result count:", courses);
 
   sendResponse(res, 200, "Courses fetched successfully", courses);
 });
@@ -34,19 +38,11 @@ const getAllCourses = catchAsyncHandler(async (req: Request, res: Response) => {
 // GET course by ID
 // ==============================
 const getCourseById = catchAsyncHandler(async (req: Request, res: Response) => {
-  const course = await courseService.getCourseById(req.params.id);
+  const userId = req.user?.id;
+  const course = await courseService.getCourseById(req.params.id as string, userId);
   sendResponse(res, 200, "Course fetched successfully", course);
 });
 
-
-/**
- * Retrieve courses enrolled by the currently authenticated student
- */
-const getMyCourses = catchAsyncHandler(async (req: Request, res: Response) => {
-  const userId = req.user!.id; // Standardized to 'id' from Prisma
-  const courses = await courseService.getMyCourses(userId);
-  sendResponse(res, 200, "Your enrolled courses retrieved successfully", courses);
-});
 
 /**
  * Mark a specific course lesson as completed for the current student
@@ -59,22 +55,13 @@ const completeLesson = catchAsyncHandler(async (req: Request, res: Response) => 
   sendResponse(res, 200, "Progress tracked: Lesson marked as completed");
 });
 
-/**
- * Enroll the current user into a specific course
- */
-const enrollCourse = catchAsyncHandler(async (req: Request, res: Response) => {
-  const courseId = req.params.courseId;
-  const userId = req.user!.id;
 
-  await courseService.enrollCourse(userId, courseId);
-  sendResponse(res, 200, "Enrollment successful: Welcome to the course");
-});
 
 // ==============================
 // UPDATE a course
 // ==============================
 const updateCourse = catchAsyncHandler(async (req: Request, res: Response) => {
-  const course = await courseService.updateCourse(req.params.id, req.body);
+  const course = await courseService.updateCourse(req.params.id as string, req.body);
   sendResponse(res, 200, "Course updated successfully", course);
 });
 
@@ -82,8 +69,17 @@ const updateCourse = catchAsyncHandler(async (req: Request, res: Response) => {
 // DELETE a course
 // ==============================
 const deleteCourse = catchAsyncHandler(async (req: Request, res: Response) => {
-  const result = await courseService.deleteCourse(req.params.id);
+  const result = await courseService.deleteCourse(req.params.id as string);
   sendResponse(res, 200, result.message);
+});
+
+/**
+ * Retrieve all courses the current user is enrolled in
+ */
+const getMyCourses = catchAsyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  const courses = await courseService.getMyCourses(userId);
+  sendResponse(res, 200, "Your enrolled courses fetched successfully", courses);
 });
 
 export const courseController = {
@@ -92,7 +88,7 @@ export const courseController = {
   getCourseById,
   updateCourse,
   deleteCourse,
-  enrollCourse,
   getMyCourses,
   completeLesson,
 };
+
