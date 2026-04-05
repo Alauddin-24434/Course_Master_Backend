@@ -25,9 +25,8 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",
-      "https://course-master-frontend-flax.vercel.app",
-    ], // frontend URL
+      `${process.env.FRONTEND_URL}`,
+    ], 
     credentials: true, // cookie allow
   })
 );
@@ -328,7 +327,8 @@ app.get("/", (req: Request, res: Response) => {
 // ==============================
 // API ROUTES
 // ==============================
-app.use("/api/v1", baseRouter);
+app.use("/api", baseRouter);
+
 
 // ==============================
 // 404 NOT FOUND ROUTE
