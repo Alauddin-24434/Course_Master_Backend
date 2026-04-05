@@ -26,7 +26,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "https://course-master-frontend-nine.vercel.app",
+      "https://course-master-frontend-flax.vercel.app",
     ], // frontend URL
     credentials: true, // cookie allow
   })
