@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { moduleService } from "../services/module.service";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
@@ -46,7 +46,7 @@ const getAllModules = catchAsyncHandler(async (req: Request, res: Response) => {
 // ==============================
 // EXPORT CONTROLLER
 // ==============================
-export const moduleController = {
+export const moduleController : ModuleController = {
   addModule,
   updateModule,
   deleteModule,
@@ -54,3 +54,10 @@ export const moduleController = {
   getAllModules,
 };
 
+type ModuleController = {
+  addModule: RequestHandler;
+  updateModule: RequestHandler;
+  deleteModule: RequestHandler;
+  getModuleByCourseId: RequestHandler;
+  getAllModules: RequestHandler;
+}

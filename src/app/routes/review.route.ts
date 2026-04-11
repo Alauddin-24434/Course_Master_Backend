@@ -8,4 +8,4 @@ router.get("/", reviewController.getAllReviews);
 router.post("/", protect, authorize("student", "instructor", "admin"), reviewController.createReview);
 router.delete("/:id", protect, authorize("student", "instructor", "admin"), reviewController.deleteReview);
 
-export const reviewRoutes = router;
+export const reviewRoutes : Router= router;

@@ -21,4 +21,4 @@ router.get("/", protect, authorize(UserRole.INSTRUCTOR), quizController.getAllQu
 router.patch("/:id", protect, authorize(UserRole.INSTRUCTOR), quizController.updateQuiz);
 router.delete("/:id", protect, authorize(UserRole.INSTRUCTOR), quizController.deleteQuiz);
 
-export const quizRouter = router;
+export const quizRouter : Router= router;

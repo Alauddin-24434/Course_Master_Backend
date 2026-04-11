@@ -1,11 +1,11 @@
-import express from "express";
+import express, { Router } from "express";
 import { authorize, protect } from "../middlewares/auth.middleware";
-import { getAllUsers, becomeInstructor } from "../controllers/user.controller";
+import { userController } from "../controllers/user.controller";
 
 const router = express.Router();
 
-router.get("/", protect, authorize("admin"), getAllUsers);
-router.post("/become-instructor", protect, becomeInstructor);
+router.get("/", protect, authorize("admin"), userController.getAllUsers);
+router.post("/become-instructor", protect, userController.becomeInstructor);
 
-export const userRouter = router;
+export const userRouter : Router= router;
 

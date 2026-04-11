@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { quizService } from "../services/quiz.service";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
@@ -34,9 +34,16 @@ const deleteQuiz = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 200, "Quiz deleted successfully", null);
 });
 
-export const quizController = {
+export const quizController: QuizController = {
   createQuiz,
   getAllQuizzes,
   updateQuiz,
   deleteQuiz,
 };
+
+type QuizController = {
+  createQuiz: RequestHandler;
+  getAllQuizzes: RequestHandler;
+  updateQuiz: RequestHandler;
+  deleteQuiz: RequestHandler;
+}

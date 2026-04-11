@@ -22,5 +22,5 @@ router.get("/", protect, authorize(UserRole.INSTRUCTOR), assignmentController.ge
 router.patch("/:id", protect, authorize(UserRole.INSTRUCTOR), assignmentController.updateAssignment);
 router.delete("/:id", protect, authorize(UserRole.ADMIN), assignmentController.deleteAssignment);
 
-export const assignmentRouter = router;
+export const assignmentRouter : Router= router;
 

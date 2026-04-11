@@ -13,4 +13,4 @@ router.get("/me", protect, enrollController.getMyEnrollments);
 // Get curriculum for a specific enrolled course
 router.get("/courses/:courseId", protect, enrollController.getEnrolledCourseContent);
 
-export const enrollRouter = router;
+export const enrollRouter : Router= router;

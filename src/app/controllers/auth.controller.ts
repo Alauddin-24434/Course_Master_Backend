@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { authServices } from "../services/auth.service";
 import { loginValidation, signupValidation } from "../validations/auth.validation";
@@ -81,9 +81,17 @@ const logout = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 200, "Logged out successfully");
 });
 
-export const authControllers = {
+export const authControllers:AuthControllers = {
   signup,
   login,
   refreshToken,
   logout,
 };
+
+
+type AuthControllers = {
+  signup: RequestHandler;
+  login: RequestHandler;
+  refreshToken: RequestHandler;
+  logout: RequestHandler;
+}

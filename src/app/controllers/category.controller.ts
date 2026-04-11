@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { categoryService } from "../services/category.service";
 import { sendResponse } from "../utils/sendResponse"; // make sure path is correct
@@ -35,9 +35,16 @@ const deleteCategory = catchAsyncHandler(async (req: Request, res: Response) => 
   sendResponse(res, 200, "Category deleted successfully", result);
 });
 
-export const categoryController = {
+export const categoryController:CategoryController = {
   getCategories,
   createCategory,
   updateCategory,
   deleteCategory,
 };
+
+type CategoryController = {
+  getCategories: RequestHandler;
+  createCategory: RequestHandler;
+  updateCategory: RequestHandler;
+  deleteCategory: RequestHandler;
+}

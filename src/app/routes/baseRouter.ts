@@ -41,4 +41,4 @@ routes.forEach((route) => {
 });
 
 // Export the base router to use in app.ts or server.ts
-export const baseRouter = router;
+export const baseRouter : Router= router;

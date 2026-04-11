@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
 import { enrollService } from "../services/enroll.service";
@@ -29,9 +29,14 @@ const getEnrolledCourseContent = catchAsyncHandler(async (req: Request, res: Res
 });
 
 
-export const enrollController = {
+export const enrollController:EnrollController = {
   enrollCourse,
   getMyEnrollments,
   getEnrolledCourseContent,
 };
 
+type EnrollController = {
+  enrollCourse: RequestHandler;
+  getMyEnrollments: RequestHandler;
+  getEnrolledCourseContent: RequestHandler;
+}

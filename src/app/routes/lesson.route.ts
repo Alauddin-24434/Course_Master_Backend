@@ -24,4 +24,4 @@ router.get("/", protect, lessonController.getAllLessons);
 // Get a specific lesson by ID
 router.get("/:lessonId", protect, lessonController.getLessonById);
 
-export const lessonRouter = router;
+export const lessonRouter: Router = router;

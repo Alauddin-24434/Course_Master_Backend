@@ -42,4 +42,4 @@ router.put("/:id", protect, authorize("admin"), courseController.updateCourse);
 // Delete a course by ID (Admin only)
 router.delete("/:id", protect, authorize("admin"), courseController.deleteCourse);
 
-export const courseRouter = router;
+export const courseRouter : Router= router;

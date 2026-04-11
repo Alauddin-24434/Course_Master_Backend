@@ -27,4 +27,4 @@ router.put("/:id", categoryController.updateCategory);
 // Delete a specific category by ID
 router.delete("/:id", categoryController.deleteCategory);
 
-export const categoryRouter = router;
+export const categoryRouter : Router= router;

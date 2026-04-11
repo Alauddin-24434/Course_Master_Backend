@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
 import { AssignmentService } from "../services/assignment.service";
@@ -26,7 +26,12 @@ const submitQuiz = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 201, "Quiz submitted successfully", result);
 });
 
-export const studentSubmissionController = {
+export const studentSubmissionController: StudentSubmissionController = {
   submitAssignment,
   submitQuiz,
 };
+
+type StudentSubmissionController = {
+  submitAssignment: RequestHandler;
+  submitQuiz: RequestHandler;
+}

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { lessonService } from "../services/lesson.service";
 import { sendResponse } from "../utils/sendResponse";
@@ -41,10 +41,19 @@ const getAllLessons = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 200, "Lessons fetched successfully", lessons);
 });
 
-export const lessonController = {
+export const lessonController : LessonController = {
   addLesson,
   updateLesson,
   deleteLesson,
   getLessonById,
   getAllLessons,
 };
+
+
+type LessonController = {
+  addLesson: RequestHandler;
+  updateLesson: RequestHandler;
+  deleteLesson: RequestHandler;
+  getLessonById: RequestHandler;
+  getAllLessons: RequestHandler;
+}

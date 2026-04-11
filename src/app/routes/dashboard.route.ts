@@ -1,9 +1,10 @@
-import express from "express";
-import { getDashboardAnalytics } from "../controllers/dashboard.controller";
+import express, { Router } from "express";
+
 import { authorize, protect } from "../middlewares/auth.middleware";
+import { dashboardController } from "../controllers/dashboard.controller";
 
 const router = express.Router();
 
-router.get("/analytics",protect, authorize("admin", "student", "instructor"), getDashboardAnalytics);
+router.get("/analytics",protect, authorize("admin", "student", "instructor"), dashboardController.getDashboardAnalytics);
 
-export const dashboardRouter= router;
+export const dashboardRouter : Router= router;

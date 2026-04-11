@@ -1,39 +1,29 @@
-# ---------------------------
-# Stage 1: Build
-# ---------------------------
+# Stage 1: Builder
 FROM node:22-alpine AS builder
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
-COPY prisma ./prisma/
-
-RUN npm install
-
-COPY . .
-
-# Dummy URL for build
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
-
-RUN npm run build
-
-
-# ---------------------------
-# Stage 2: Production
-# ---------------------------
-FROM node:22-alpine
-
-WORKDIR /usr/src/app
-
-COPY package*.json ./
+WORKDIR /app
+RUN corepack enable
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
-COPY tsconfig.json ./
-COPY --from=builder /usr/src/app/dist ./dist
-COPY --from=builder /usr/src/app/node_modules ./node_modules
+# Prisma v7 build-time generate
+RUN DATABASE_URL="postgresql://placeholder:5432" pnpm prisma generate
+COPY . .
+RUN pnpm build
 
+# Stage 2: Production
+FROM node:22-alpine
+WORKDIR /app
+RUN corepack enable
 ENV NODE_ENV=production
+COPY package.json pnpm-lock.yaml prisma.config.ts ./ 
+COPY prisma ./prisma/
+RUN pnpm install --prod --frozen-lockfile
+# Re-link Prisma Client for production
+RUN DATABASE_URL="postgresql://placeholder:5432" pnpm prisma generate
+COPY --from=builder /app/dist ./dist
 
 EXPOSE 5000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Try dist/server.js first; if it fails, try dist/index.js
+CMD ["sh", "-c", "pnpm prisma migrate deploy && node dist/server.js"]

@@ -31,4 +31,4 @@ router.get(
 
 
 
-export const moduleRouter = router;
+export const moduleRouter : Router= router;

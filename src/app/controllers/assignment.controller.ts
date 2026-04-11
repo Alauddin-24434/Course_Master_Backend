@@ -1,5 +1,5 @@
 // controllers/assignment.controller.ts
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
@@ -33,10 +33,16 @@ const deleteAssignment = catchAsyncHandler(async (req: Request, res: Response) =
   sendResponse(res, 200, "Assignment deleted successfully", null);
 });
 
-export const assignmentController = {
+export const assignmentController :AssignmentController= {
   createAssignment,
   getAssignmentsIntoIntrutorCourses,
   updateAssignment,
   deleteAssignment,
 };
 
+type AssignmentController = {
+  createAssignment: RequestHandler;
+  getAssignmentsIntoIntrutorCourses: RequestHandler;
+  updateAssignment: RequestHandler;
+  deleteAssignment: RequestHandler;
+}

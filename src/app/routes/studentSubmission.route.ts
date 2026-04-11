@@ -10,4 +10,4 @@ router.post("/assignments/submit", protect, studentSubmissionController.submitAs
 // Submit a quiz (student)
 router.post("/quizs/submit", protect, studentSubmissionController.submitQuiz);
 
-export const studentSubmissionRouter = router;
+export const studentSubmissionRouter : Router= router;

@@ -1,5 +1,5 @@
 
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { courseService } from "../services/course.service";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
@@ -82,7 +82,7 @@ const getMyCourses = catchAsyncHandler(async (req: Request, res: Response) => {
   sendResponse(res, 200, "Your enrolled courses fetched successfully", courses);
 });
 
-export const courseController = {
+export const courseController:CourseController = {
   createCourse,
   getAllCourses,
   getCourseById,
@@ -92,3 +92,12 @@ export const courseController = {
   completeLesson,
 };
 
+type CourseController = {
+  createCourse: RequestHandler;
+  getAllCourses: RequestHandler;
+  getCourseById: RequestHandler;
+  updateCourse: RequestHandler;
+  deleteCourse: RequestHandler;
+  getMyCourses: RequestHandler;
+  completeLesson: RequestHandler;
+}

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, RequestHandler, Response } from "express";
 import { catchAsyncHandler } from "../utils/catchAsyncHandler";
 import { sendResponse } from "../utils/sendResponse";
 import { dashboardService } from "../services/dashboard.service";
@@ -8,7 +8,7 @@ import { IUser } from "../interfaces/user.interface";
  * Handle Dashboard data requests
  * Dispatches analytics gathering based on the authenticated user's role.
  */
-export const getDashboardAnalytics = catchAsyncHandler(
+const getDashboardAnalytics = catchAsyncHandler(
   async (req: Request, res: Response) => {
     // Identity provided by the 'protect' middleware
     const user = req.user as IUser;
@@ -20,3 +20,12 @@ export const getDashboardAnalytics = catchAsyncHandler(
     sendResponse(res, 200, "Dashboard analytics successfully retrieved", analyticsData);
   }
 );
+
+
+export const dashboardController:DashboardController = {
+  getDashboardAnalytics,
+};
+
+type DashboardController = {
+  getDashboardAnalytics:  RequestHandler;
+}

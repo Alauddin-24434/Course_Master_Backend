@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express, { Application, Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser"; // <-- ADD THIS
 import globalErrorHandler from "./app/middlewares/globalErrorHandler";
@@ -9,7 +9,7 @@ import rateLimit from "express-rate-limit";
 // ==============================
 // INITIALIZE EXPRESS APP
 // ==============================
-const app = express();
+const app : Application= express();
 
 // ==============================
 // MIDDLEWARES
